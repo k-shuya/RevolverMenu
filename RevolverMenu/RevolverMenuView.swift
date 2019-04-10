@@ -8,12 +8,18 @@
 
 import UIKit
 
-enum direction {
+public enum direction {
     case right
     case left
 }
 
-class RevolverMenuView: UIView {
+public protocol RevolverMenuViewDelegate: class {
+    func didSelect(on menu: RevolverMenuView, index: Int)
+}
+
+public class RevolverMenuView: UIView {
+    
+    public weak var delegate: RevolverMenuViewDelegate?
     
     private var items: [RevolverMenuItem] = []
     private var buttons: [RevolverMenuItem]  = [RevolverMenuItem](repeating: RevolverMenuItem(), count: 12) {
@@ -21,10 +27,19 @@ class RevolverMenuView: UIView {
             
         }
     }
+    private var startItem: RevolverMenuItem = RevolverMenuItem()
     
     private var startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
     
+    private var isSelectedButton = false
+    
     public var expandMargin: CGFloat = 120.0
+    public var displayCount: Int = 4
+    public var duration: TimeInterval = 0.4
+    public var currentPage: Int = 0
+    
+    var setUserInteraction: ((Bool) -> Void)?
+    
     
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -37,9 +52,6 @@ class RevolverMenuView: UIView {
         
         reloadItems()
         
-        initPoints()
-        
-        
         enableAutoLayout()
         moveMenuButtonPosision()
         hiddenButton()
@@ -50,6 +62,7 @@ class RevolverMenuView: UIView {
         self.init(frame: frame)
         
         self.items = items
+        self.startItem = startItem
         
         switch direction {
         case .right:
@@ -68,18 +81,83 @@ class RevolverMenuView: UIView {
         
         for (index, button) in buttons.enumerated() {
             self.addSubview(button)
-            button.center = CGPoint(x: startPoint.x + expandMargin * CGFloat(cos(-Double.pi/6)), y: startPoint.y - expandMargin * CGFloat(sin(-Double.pi/6)))
+            button.center = startPoint
+            button.tag = index
         }
         
     }
     
+    func initGesture(view: UIView) {
+        
+        let rightSwipe = UISwipeGestureRecognizer(target: self, action: #selector(didSwipe(sender:)))
+        let leftSwipe = UISwipeGestureRecognizer(target: self, action: #selector(didSwipe(sender:)))
+        let upSwipe = UISwipeGestureRecognizer(target: self, action: #selector(didSwipe(sender:)))
+        let downSwipe = UISwipeGestureRecognizer(target: self, action: #selector(didSwipe(sender:)))
+        
+        rightSwipe.direction = .right
+        view.addGestureRecognizer(rightSwipe)
+        
+        
+        leftSwipe.direction = .left
+        view.addGestureRecognizer(leftSwipe)
+        
+        upSwipe.direction = .up
+        view.addGestureRecognizer(upSwipe)
+        
+        
+        downSwipe.direction = .down
+        view.addGestureRecognizer(downSwipe)
+    }
+    
+    @objc func didSwipe(sender: UISwipeGestureRecognizer) {
+        print(#function)
+        if sender.direction == .right || sender.direction == .up {
+            print("up")
+            if currentPage != items.count/4 {
+                rightAnimation()
+            }
+        }
+        else if sender.direction == .left || sender.direction == .down {
+            print("down")
+            if currentPage != 0 {
+                leftAnimation()
+            }
+        }
+    }
+    
+    func createGestureView() {
+        let clearFrame = CGRect(x: self.frame.width-250, y: self.frame.height-250, width: 250, height: 250)
+        var allBtns = buttons
+        allBtns.append(startItem)
+        let clearView = SwipeView(frame: clearFrame, btns: allBtns)
+        
+        clearView.isUserInteractionEnabled = true
+        /*
+         crearView.alpha = 0.5
+         crearView.backgroundColor = UIColor.black
+         */
+        clearView.parent = self
+        
+        initGesture(view: clearView)
+        
+        self.addSubview(clearView)
+        //setUserInteraction?(false)
+    }
+    
+    func removeGestureView() {
+        self.subviews.last?.removeFromSuperview()
+    }
+    
     private func reloadItems() {
-        displayItems.removeAll()
-        for index in (4 * currentPage)...(4 * currentPage) + 4 {
-            if index >= items.count {
-                displayItems.append(UIImage())
+        buttons.removeAll()
+        
+        for index in (currentPage * 4 - 4)...(currentPage * 4 + 7) {
+            if index < 0 {
+                buttons.append(RevolverMenuItem())
+            } else if index >= items.count {
+                buttons.append(RevolverMenuItem())
             } else {
-                displayItems.append(items[index])
+                buttons.append(items[index])
             }
         }
     }
@@ -110,7 +188,7 @@ class RevolverMenuView: UIView {
     /// AutoLayoutを有効にする
     private func enableAutoLayout() {
         buttons.forEach { $0.translatesAutoresizingMaskIntoConstraints = true }
-        menuButton.translatesAutoresizingMaskIntoConstraints = true
+        startItem.translatesAutoresizingMaskIntoConstraints = true
     }
     
     /// ボタンを表示する
@@ -131,7 +209,8 @@ class RevolverMenuView: UIView {
     }
     
     private func calcExpandedPosition(_ index: Int) -> CGPoint {
-        return CGPoint(x: startPoint.x + expandMargin * CGFloat(cos(-Double.pi/6)), y: startPoint.y - expandMargin * CGFloat(sin(-Double.pi/6)))
+        let angle = Double.pi * 2 / Double(displayCount * 3)
+        return CGPoint(x: startPoint.x + expandMargin * CGFloat(cos(Double(index) * angle)), y: startPoint.y - expandMargin * CGFloat(sin(Double(index) * angle)))
     }
     
     /// ボタンをメニューの場所へ移動する
@@ -139,104 +218,75 @@ class RevolverMenuView: UIView {
         buttons.forEach { $0.center = startPoint }
     }
     
-    private func changeButtonItem() {
-        reloadItems()
+    func rightAnimation() {
         
-        for btn in buttons {
-            btn.setImage(displayItems[buttons.index(of: btn)!], for: .normal)
-        }
-        
-    }
-    
-    func upAnimation() {
-        
-        for out_btn in out_buttons {
-            out_btn.layer.removeAnimation(forKey: "end")
+        for (index, button) in buttons.enumerated() {
+            button.layer.removeAnimation(forKey: "end")
             let animation: CAKeyframeAnimation = self.animation()
             let path: CGMutablePath = CGMutablePath()
-            let stPoint: CGPoint = out_btn.center
-            let angle: Double = Double(out_buttons.index(of: out_btn)!) / 6.0
+            let stPoint: CGPoint = button.center
+            let angle: Double = Double(index) / 6.0
             
             path.move(to: stPoint)
             path.addArc(center: startPoint,
                         radius: expandMargin,
-                        startAngle: CGFloat(-Double.pi * (7/6 + angle)),
-                        endAngle: CGFloat(-Double.pi * (1/2 + angle)),
+                        startAngle: CGFloat(-Double.pi * (angle)),
+                        endAngle: CGFloat(-Double.pi * (angle + 2/3)),
                         clockwise: false)
             animation.path = path
-            out_btn.layer.add(animation, forKey: "start")
-        }
-        
-        for btn in buttons {
-            btn.layer.removeAnimation(forKey: "end")
-            let animation: CAKeyframeAnimation = self.animation()
-            let path: CGMutablePath = CGMutablePath()
-            let stPoint: CGPoint = btn.center
-            let angle: Double = Double(buttons.index(of: btn)!) / 6.0
-            
-            path.move(to: stPoint)
-            path.addArc(center: startPoint,
-                        radius: expandMargin,
-                        startAngle: CGFloat(-Double.pi * (1/2 + angle)),
-                        endAngle: CGFloat(-Double.pi * (-1/6 + angle)),
-                        clockwise: false)
-            animation.path = path
-            btn.layer.add(animation, forKey: "start")
+            button.layer.add(animation, forKey: "start")
         }
         
         //changeBackCalor()
-        nextImage = present
         currentPage += 1
     }
     
-    func downAnimation() {
+    func leftAnimation() {
         
-        for in_btn in in_buttons {
-            in_btn.layer.removeAnimation(forKey: "end")
+        for (index, button) in buttons.enumerated() {
+            button.layer.removeAnimation(forKey: "end")
             let animation: CAKeyframeAnimation = self.animation()
             let path: CGMutablePath = CGMutablePath()
-            let stPoint: CGPoint = in_btn.center
-            let angle: Double = Double(in_buttons.index(of: in_btn)!) / 6.0
+            let stPoint: CGPoint = button.center
+            let angle: Double = Double(index) / 6.0
             
             path.move(to: stPoint)
             path.addArc(center: startPoint,
                         radius: expandMargin,
-                        startAngle: CGFloat(-Double.pi * (-1/6 + angle)),
-                        endAngle: CGFloat(-Double.pi * (1/2 + angle)),
-                        clockwise: true)
+                        startAngle: CGFloat(Double.pi * (angle)),
+                        endAngle: CGFloat(Double.pi * (angle + 2/3)),
+                        clockwise: false)
             animation.path = path
-            in_btn.layer.add(animation, forKey: "start")
-            
-        }
-        
-        for btn in buttons {
-            btn.layer.removeAnimation(forKey: "end")
-            let animation: CAKeyframeAnimation = self.animation()
-            let path: CGMutablePath = CGMutablePath()
-            let stPoint: CGPoint = btn.center
-            let angle: Double = Double(buttons.index(of: btn)!) / 6.0
-            
-            path.move(to: stPoint)
-            path.addArc(center: startPoint,
-                        radius: expandMargin,
-                        startAngle: CGFloat(-Double.pi * (2/3 + angle)),
-                        endAngle: CGFloat(-Double.pi * (7/6 + angle)),
-                        clockwise: true)
-            animation.path = path
-            btn.layer.add(animation, forKey: "start")
-            
+            button.layer.add(animation, forKey: "start")
         }
         
         //changeBackCalor()
-        nextImage = star
         currentPage -= 1
         
+    }
+    
+    func animation() -> CAKeyframeAnimation {
+        let animation: CAKeyframeAnimation = CAKeyframeAnimation(keyPath: "position")
+        animation.fillMode = CAMediaTimingFillMode.forwards
+        animation.isRemovedOnCompletion = false
+        animation.duration = duration
+        animation.delegate = self
+        return animation
     }
 
 }
 
 extension RevolverMenuView: CAAnimationDelegate {
     func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        changeButtonItem()
+        reloadItems()
     }
+}
+
+extension RevolverMenuView: RevolverMenuItemDelegate {
+    public func tapped(on item: RevolverMenuItem) {
+        if (4...7) ~= item.tag {
+            delegate?.didSelect(on: self, index: item.tag - 4)
+        }
+    }
+    
 }

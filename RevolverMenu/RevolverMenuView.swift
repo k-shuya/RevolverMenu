@@ -27,7 +27,7 @@ public class RevolverMenuView: UIView {
             
         }
     }
-    private var startItem: RevolverMenuItem = RevolverMenuItem()
+    private var startButton: RevolverMenuItem = RevolverMenuItem()
     
     private var startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
     
@@ -62,11 +62,14 @@ public class RevolverMenuView: UIView {
         self.init(frame: frame)
         
         self.items = items
-        self.startItem = startItem
+        self.startButton = startItem
+        
+        startButton.delegate = self
         
         switch direction {
         case .right:
-            startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
+            //startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
+            startPoint = CGPoint(x: UIScreen.main.bounds.width/2, y: UIScreen.main.bounds.height/2)
         case .left:
             startPoint = CGPoint(x: 30, y: UIScreen.main.bounds.height - 30)
         }
@@ -83,7 +86,10 @@ public class RevolverMenuView: UIView {
             self.addSubview(button)
             button.center = startPoint
             button.tag = index
+            button.delegate = self
         }
+        
+        self.addSubview(startItem)
         
     }
     
@@ -128,7 +134,7 @@ public class RevolverMenuView: UIView {
     func createGestureView() {
         let clearFrame = CGRect(x: self.frame.width-250, y: self.frame.height-250, width: 250, height: 250)
         var allBtns = buttons
-        allBtns.append(startItem)
+        allBtns.append(startButton)
         let clearView = SwipeView(frame: clearFrame, btns: allBtns)
         
         clearView.isUserInteractionEnabled = true
@@ -188,7 +194,7 @@ public class RevolverMenuView: UIView {
     /// AutoLayoutを有効にする
     private func enableAutoLayout() {
         buttons.forEach { $0.translatesAutoresizingMaskIntoConstraints = true }
-        startItem.translatesAutoresizingMaskIntoConstraints = true
+        startButton.translatesAutoresizingMaskIntoConstraints = true
     }
     
     /// ボタンを表示する
@@ -253,9 +259,9 @@ public class RevolverMenuView: UIView {
             path.move(to: stPoint)
             path.addArc(center: startPoint,
                         radius: expandMargin,
-                        startAngle: CGFloat(Double.pi * (angle)),
-                        endAngle: CGFloat(Double.pi * (angle + 2/3)),
-                        clockwise: false)
+                        startAngle: CGFloat(-Double.pi * (angle)),
+                        endAngle: CGFloat(-Double.pi * (angle + 2/3)),
+                        clockwise: true)
             animation.path = path
             button.layer.add(animation, forKey: "start")
         }
@@ -284,8 +290,12 @@ extension RevolverMenuView: CAAnimationDelegate {
 
 extension RevolverMenuView: RevolverMenuItemDelegate {
     public func tapped(on item: RevolverMenuItem) {
-        if (4...7) ~= item.tag {
-            delegate?.didSelect(on: self, index: item.tag - 4)
+        if item == startButton {
+            selectedTargetMenu()
+        }
+        
+        if (3...6) ~= item.tag {
+            delegate?.didSelect(on: self, index: item.tag - 3)
         }
     }
     

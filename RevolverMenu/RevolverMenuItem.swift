@@ -22,10 +22,12 @@ public class RevolverMenuItem: UIButton {
         super.init(coder: aDecoder)
     }
     
-    init() {
-        super.init(frame: CGRect(x: 10, y: 10, width: 10, height: 10))
-        self.layer.cornerRadius = self.frame.size.width * 0.1
+    public init() {
+        super.init(frame: CGRect(x: 10, y: 10, width: 50, height: 50))
+        //self.layer.cornerRadius = self.frame.size.width * 0.1
+        self.layer.cornerRadius = self.frame.size.width * 0.5
         self.backgroundColor = self.backColor
+        self.setTitle("", for: .normal)  
         self.addTarget(self, action: #selector(buttonEvent(_:)), for: UIControl.Event.touchUpInside)
         
     }

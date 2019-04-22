@@ -111,6 +111,7 @@ public class RevolverMenuView: UIView {
         circleLayer.path = path.cgPath
         
         startItem.center = startPoint
+        startItem.backgroundColor = UIColor.white
         
         for (index, button) in buttons.enumerated() {
             self.addSubview(button)
@@ -118,8 +119,8 @@ public class RevolverMenuView: UIView {
             button.tag = index
             button.delegate = self
         }
-        self.drawSector()
         self.layer.insertSublayer(circleLayer, at: 0)
+        self.drawSector()
         self.addSubview(startItem)
         
     }

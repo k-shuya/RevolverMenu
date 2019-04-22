@@ -29,12 +29,19 @@ public class RevolverMenuItem: UIButton {
         self.backgroundColor = self.backColor
         self.setTitle("", for: .normal)  
         self.addTarget(self, action: #selector(buttonEvent(_:)), for: UIControl.Event.touchUpInside)
-        
     }
     
     @objc func buttonEvent(_ sender: UIButton) {
         delegate?.tapped(on: self)
         //selectedTargetMenu()
+    }
+    
+    public func setItem(image: RMItemImage) {
+        self.backgroundColor = image.backgroundColor
+        self.setImage(image.itemImage, for: .normal)
+        self.setImage(image.itemHighLightedImage, for: .highlighted)
+        self.setBackgroundImage(image.backgroundImage, for: .normal)
+        self.setBackgroundImage(image.backgroundHighLightedImage, for: .highlighted)
     }
 
 }

@@ -21,12 +21,8 @@ public class RevolverMenuView: UIView {
     
     public weak var delegate: RevolverMenuViewDelegate?
     
-    private var items: [RevolverMenuItem] = []
-    private var buttons: [RevolverMenuItem]  = [RevolverMenuItem](repeating: RevolverMenuItem(), count: 12) {
-        didSet {
-            
-        }
-    }
+    private var items: [RMItemImage] = []
+    private var buttons: [RevolverMenuItem] = (0 ..< 12).map({ _ in RevolverMenuItem() })
     private var startButton: RevolverMenuItem = RevolverMenuItem()
     
     private var startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
@@ -50,15 +46,13 @@ public class RevolverMenuView: UIView {
         
         self.isUserInteractionEnabled = true
         
-        reloadItems()
-        
         enableAutoLayout()
         moveMenuButtonPosision()
         hiddenButton()
         
     }
     
-    public convenience init(frame: CGRect, startItem: RevolverMenuItem, items:[RevolverMenuItem], direction: direction) {
+    public convenience init(frame: CGRect, startItem: RevolverMenuItem, items: [RMItemImage], direction: direction) {
         self.init(frame: frame)
         
         self.items = items
@@ -74,11 +68,12 @@ public class RevolverMenuView: UIView {
             startPoint = CGPoint(x: 30, y: UIScreen.main.bounds.height - 30)
         }
         
-        initButtons(startItem: startItem, items: items)
+        reloadItems()
+        initButtons(startItem: startItem)
         
     }
     
-    private func initButtons(startItem: RevolverMenuItem, items:[RevolverMenuItem]){
+    private func initButtons(startItem: RevolverMenuItem){
         
         startItem.center = startPoint
         
@@ -88,7 +83,6 @@ public class RevolverMenuView: UIView {
             button.tag = index
             button.delegate = self
         }
-        
         self.addSubview(startItem)
         
     }
@@ -116,16 +110,15 @@ public class RevolverMenuView: UIView {
     }
     
     @objc func didSwipe(sender: UISwipeGestureRecognizer) {
-        print(#function)
         if sender.direction == .right || sender.direction == .up {
-            print("up")
             if currentPage != items.count/4 {
+                reloadItems()
                 rightAnimation()
             }
         }
         else if sender.direction == .left || sender.direction == .down {
-            print("down")
             if currentPage != 0 {
+                reloadItems()
                 leftAnimation()
             }
         }
@@ -155,31 +148,29 @@ public class RevolverMenuView: UIView {
     }
     
     private func reloadItems() {
-        buttons.removeAll()
-        
         for index in (currentPage * 4 - 4)...(currentPage * 4 + 7) {
             if index < 0 {
-                buttons.append(RevolverMenuItem())
+                buttons[index-(currentPage * 4 - 4)].setItem(image: RMItemImage())
             } else if index >= items.count {
-                buttons.append(RevolverMenuItem())
+                buttons[index-(currentPage * 4 - 4)].setItem(image: RMItemImage())
             } else {
-                buttons.append(items[index])
+                buttons[index-(currentPage * 4 - 4)].setItem(image: items[index])
             }
         }
     }
     
-    /// 該当のメニューを選択する
+    /// メニューを押下
     private func selectedTargetMenu() {
+        buttons.forEach{ $0.layer.removeAllAnimations()} // 残っているアニメーションを無効化
+        reloadItems()
         
         if isSelectedButton {
-            
             UIView.animate(withDuration: 0.3, animations: {
                 self.moveMenuButtonPosision()
                 self.hiddenButton()
                 self.removeGestureView()
             })
         } else {
-            
             UIView.animate(withDuration: 0.3, animations: {
                 self.moveDefaultButtonPosision()
                 self.showButton()
@@ -188,7 +179,6 @@ public class RevolverMenuView: UIView {
         }
         isSelectedButton = !isSelectedButton
         setUserInteraction?(!isSelectedButton)
-        
     }
     
     /// AutoLayoutを有効にする
@@ -207,7 +197,7 @@ public class RevolverMenuView: UIView {
         buttons.forEach { $0.alpha = 0 }
     }
     
-    /// ボタンを元の場所に移動する
+    /// ボタンを広げる
     private func moveDefaultButtonPosision() {
         for (index, button) in buttons.enumerated() {
             button.center = calcExpandedPosition(index)
@@ -215,8 +205,8 @@ public class RevolverMenuView: UIView {
     }
     
     private func calcExpandedPosition(_ index: Int) -> CGPoint {
-        let angle = Double.pi * 2 / Double(displayCount * 3)
-        return CGPoint(x: startPoint.x + expandMargin * CGFloat(cos(Double(index) * angle)), y: startPoint.y - expandMargin * CGFloat(sin(Double(index) * angle)))
+        let angle = Double.pi * 2 / Double(displayCount * 3) // 2π ÷ ボタンの個数 = ボタン同士の角度
+        return CGPoint(x: startPoint.x + expandMargin * CGFloat(cos(Double(index-1) * angle)), y: startPoint.y - expandMargin * CGFloat(sin(Double(index-1) * angle)))
     }
     
     /// ボタンをメニューの場所へ移動する
@@ -225,36 +215,32 @@ public class RevolverMenuView: UIView {
     }
     
     func rightAnimation() {
-        
         for (index, button) in buttons.enumerated() {
             button.layer.removeAnimation(forKey: "end")
             let animation: CAKeyframeAnimation = self.animation()
             let path: CGMutablePath = CGMutablePath()
             let stPoint: CGPoint = button.center
-            let angle: Double = Double(index) / 6.0
+            let angle: Double = Double(index-1) / 6.0
             
             path.move(to: stPoint)
             path.addArc(center: startPoint,
                         radius: expandMargin,
                         startAngle: CGFloat(-Double.pi * (angle)),
-                        endAngle: CGFloat(-Double.pi * (angle + 2/3)),
+                        endAngle: CGFloat(-Double.pi * (angle - 2/3)),
                         clockwise: false)
             animation.path = path
             button.layer.add(animation, forKey: "start")
         }
-        
-        //changeBackCalor()
         currentPage += 1
     }
     
     func leftAnimation() {
-        
         for (index, button) in buttons.enumerated() {
             button.layer.removeAnimation(forKey: "end")
             let animation: CAKeyframeAnimation = self.animation()
             let path: CGMutablePath = CGMutablePath()
             let stPoint: CGPoint = button.center
-            let angle: Double = Double(index) / 6.0
+            let angle: Double = Double(index-1) / 6.0
             
             path.move(to: stPoint)
             path.addArc(center: startPoint,
@@ -265,10 +251,7 @@ public class RevolverMenuView: UIView {
             animation.path = path
             button.layer.add(animation, forKey: "start")
         }
-        
-        //changeBackCalor()
         currentPage -= 1
-        
     }
     
     func animation() -> CAKeyframeAnimation {
@@ -283,8 +266,8 @@ public class RevolverMenuView: UIView {
 }
 
 extension RevolverMenuView: CAAnimationDelegate {
-    func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        reloadItems()
+    @objc func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
+        //reloadItems()
     }
 }
 
@@ -292,10 +275,11 @@ extension RevolverMenuView: RevolverMenuItemDelegate {
     public func tapped(on item: RevolverMenuItem) {
         if item == startButton {
             selectedTargetMenu()
+            self.layoutIfNeeded()
         }
         
-        if (3...6) ~= item.tag {
-            delegate?.didSelect(on: self, index: item.tag - 3)
+        if (4...7) ~= item.tag {
+            delegate?.didSelect(on: self, index: currentPage * 4 + (item.tag - 4))
         }
     }
     

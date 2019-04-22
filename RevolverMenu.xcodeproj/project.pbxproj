@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5000912422643CC600015881 /* RMItemImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5000912322643CC600015881 /* RMItemImage.swift */; };
 		50D4E3EF225B141000823E36 /* RevolverMenu.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50D4E3E5225B141000823E36 /* RevolverMenu.framework */; };
 		50D4E3F4225B141000823E36 /* RevolverMenuTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D4E3F3225B141000823E36 /* RevolverMenuTests.swift */; };
 		50D4E3F6225B141000823E36 /* RevolverMenu.h in Headers */ = {isa = PBXBuildFile; fileRef = 50D4E3E8225B141000823E36 /* RevolverMenu.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -26,6 +27,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5000912322643CC600015881 /* RMItemImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RMItemImage.swift; sourceTree = "<group>"; };
 		50D4E3E5225B141000823E36 /* RevolverMenu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RevolverMenu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		50D4E3E8225B141000823E36 /* RevolverMenu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RevolverMenu.h; sourceTree = "<group>"; };
 		50D4E3E9225B141000823E36 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -80,6 +82,7 @@
 				50D4E3E8225B141000823E36 /* RevolverMenu.h */,
 				50D4E3FF225B146C00823E36 /* RevolverMenuView.swift */,
 				50D4E401225B235900823E36 /* RevolverMenuItem.swift */,
+				5000912322643CC600015881 /* RMItemImage.swift */,
 				50D4E43F225CCF2400823E36 /* SwipeView.swift */,
 				50D4E3E9225B141000823E36 /* Info.plist */,
 			);
@@ -205,6 +208,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				50D4E440225CCF2400823E36 /* SwipeView.swift in Sources */,
+				5000912422643CC600015881 /* RMItemImage.swift in Sources */,
 				50D4E402225B235900823E36 /* RevolverMenuItem.swift in Sources */,
 				50D4E400225B146C00823E36 /* RevolverMenuView.swift in Sources */,
 			);

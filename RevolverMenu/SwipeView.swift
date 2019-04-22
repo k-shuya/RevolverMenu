@@ -32,7 +32,7 @@ class SwipeView: UIView {
     }
     
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
-        print(#function)
+        //print(#function)
         
         guard !buttons.isEmpty else { return false }
         /*

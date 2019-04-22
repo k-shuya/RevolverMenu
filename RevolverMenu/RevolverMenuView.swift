@@ -62,8 +62,8 @@ public class RevolverMenuView: UIView {
         
         switch direction {
         case .right:
-            //startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
-            startPoint = CGPoint(x: UIScreen.main.bounds.width/2, y: UIScreen.main.bounds.height/2)
+            startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
+            // startPoint = CGPoint(x: UIScreen.main.bounds.width/2, y: UIScreen.main.bounds.height/2)
         case .left:
             startPoint = CGPoint(x: 30, y: UIScreen.main.bounds.height - 30)
         }
@@ -161,16 +161,29 @@ public class RevolverMenuView: UIView {
     
     /// メニューを押下
     private func selectedTargetMenu() {
-        buttons.forEach{ $0.layer.removeAllAnimations()} // 残っているアニメーションを無効化
+        // 残っているアニメーションを無効化
+        buttons.forEach{ $0.layer.removeAllAnimations() }
         reloadItems()
         
         if isSelectedButton {
+            buttons.forEach{
+                guard (4...7) ~= $0.tag else {
+                    $0.alpha = 0
+                    return
+                }
+            }
             UIView.animate(withDuration: 0.3, animations: {
                 self.moveMenuButtonPosision()
                 self.hiddenButton()
                 self.removeGestureView()
             })
         } else {
+            buttons.forEach{
+                guard (4...7) ~= $0.tag else {
+                    $0.center = calcExpandedPosition($0.tag)
+                    return
+                }
+            }
             UIView.animate(withDuration: 0.3, animations: {
                 self.moveDefaultButtonPosision()
                 self.showButton()
@@ -199,8 +212,10 @@ public class RevolverMenuView: UIView {
     
     /// ボタンを広げる
     private func moveDefaultButtonPosision() {
-        for (index, button) in buttons.enumerated() {
-            button.center = calcExpandedPosition(index)
+        buttons.forEach{
+            if (4...7) ~= $0.tag {
+                $0.center = calcExpandedPosition($0.tag)
+            }
         }
     }
     
@@ -262,7 +277,7 @@ public class RevolverMenuView: UIView {
         animation.delegate = self
         return animation
     }
-
+    
 }
 
 extension RevolverMenuView: CAAnimationDelegate {

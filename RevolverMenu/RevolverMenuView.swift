@@ -34,8 +34,9 @@ public class RevolverMenuView: UIView {
     public var duration: TimeInterval = 0.4
     public var currentPage: Int = 0
     
-    var setUserInteraction: ((Bool) -> Void)?
+    private var scrollerLayer = CAShapeLayer()
     
+    public var setUserInteraction: ((Bool) -> Void)?
     
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -62,7 +63,7 @@ public class RevolverMenuView: UIView {
         
         switch direction {
         case .right:
-            startPoint = CGPoint(x: UIScreen.main.bounds.width - 30, y: UIScreen.main.bounds.height - 30)
+            startPoint = CGPoint(x: UIScreen.main.bounds.width - 35, y: UIScreen.main.bounds.height - 35)
             // startPoint = CGPoint(x: UIScreen.main.bounds.width/2, y: UIScreen.main.bounds.height/2)
         case .left:
             startPoint = CGPoint(x: 30, y: UIScreen.main.bounds.height - 30)
@@ -73,7 +74,41 @@ public class RevolverMenuView: UIView {
         
     }
     
+    private func drawSector() {
+        scrollerLayer.removeFromSuperlayer()
+        let angle = (2.0 * Double.pi / ceil(Double(items.count)/4.0))
+        print(ceil(Double(items.count)/4.0))
+        let start: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage)) // 開始の角度
+        let end: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage+1))
+        // 終了の角度
+        
+        let path: UIBezierPath = UIBezierPath();
+        path.move(to: startPoint)
+        path.addArc(withCenter: startPoint,
+                    radius: 30,
+                    startAngle: start,
+                    endAngle: end,
+                    clockwise: false)
+        
+        scrollerLayer.fillColor = UIColor.orange.cgColor
+        scrollerLayer.path = path.cgPath
+        
+        self.layer.insertSublayer(scrollerLayer, at: 1)
+    }
+    
     private func initButtons(startItem: RevolverMenuItem){
+        
+        let circleLayer = CAShapeLayer()
+        let path: UIBezierPath = UIBezierPath();
+        path.move(to: startPoint)
+        path.addArc(withCenter: startPoint,
+                    radius: 30,
+                    startAngle: 0,
+                    endAngle: CGFloat(-Double.pi * 2.0),
+                    clockwise: false)
+        
+        circleLayer.fillColor = UIColor.lightGray.cgColor
+        circleLayer.path = path.cgPath
         
         startItem.center = startPoint
         
@@ -83,6 +118,8 @@ public class RevolverMenuView: UIView {
             button.tag = index
             button.delegate = self
         }
+        self.drawSector()
+        self.layer.insertSublayer(circleLayer, at: 0)
         self.addSubview(startItem)
         
     }
@@ -97,21 +134,19 @@ public class RevolverMenuView: UIView {
         rightSwipe.direction = .right
         view.addGestureRecognizer(rightSwipe)
         
-        
         leftSwipe.direction = .left
         view.addGestureRecognizer(leftSwipe)
         
         upSwipe.direction = .up
         view.addGestureRecognizer(upSwipe)
-        
-        
+
         downSwipe.direction = .down
         view.addGestureRecognizer(downSwipe)
     }
     
     @objc func didSwipe(sender: UISwipeGestureRecognizer) {
         if sender.direction == .right || sender.direction == .up {
-            if currentPage != items.count/4 {
+            if currentPage != Int(ceil(Double(items.count)/4.0) - 1) {
                 reloadItems()
                 rightAnimation()
             }
@@ -122,19 +157,17 @@ public class RevolverMenuView: UIView {
                 leftAnimation()
             }
         }
+        drawSector()
     }
     
     func createGestureView() {
         let clearFrame = CGRect(x: self.frame.width-250, y: self.frame.height-250, width: 250, height: 250)
         var allBtns = buttons
         allBtns.append(startButton)
+        
         let clearView = SwipeView(frame: clearFrame, btns: allBtns)
         
         clearView.isUserInteractionEnabled = true
-        /*
-         crearView.alpha = 0.5
-         crearView.backgroundColor = UIColor.black
-         */
         clearView.parent = self
         
         initGesture(view: clearView)
@@ -191,7 +224,7 @@ public class RevolverMenuView: UIView {
             })
         }
         isSelectedButton = !isSelectedButton
-        setUserInteraction?(!isSelectedButton)
+        //setUserInteraction?(!isSelectedButton)
     }
     
     /// AutoLayoutを有効にする

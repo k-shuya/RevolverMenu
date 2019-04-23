@@ -15,6 +15,7 @@ public enum direction {
 
 public protocol RevolverMenuViewDelegate: class {
     func didSelect(on menu: RevolverMenuView, index: Int)
+    func willExpand()
 }
 
 public class RevolverMenuView: UIView {
@@ -50,7 +51,6 @@ public class RevolverMenuView: UIView {
         enableAutoLayout()
         moveMenuButtonPosision()
         hiddenButton()
-        
     }
     
     public convenience init(frame: CGRect, startItem: RevolverMenuItem, items: [RMItemImage], direction: direction) {
@@ -77,20 +77,18 @@ public class RevolverMenuView: UIView {
     private func drawSector() {
         scrollerLayer.removeFromSuperlayer()
         let angle = (2.0 * Double.pi / ceil(Double(items.count)/4.0))
-        print(ceil(Double(items.count)/4.0))
         let start: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage)) // 開始の角度
-        let end: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage+1))
-        // 終了の角度
+        let end: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage+1)) // 終了の角度
         
         let path: UIBezierPath = UIBezierPath();
         path.move(to: startPoint)
         path.addArc(withCenter: startPoint,
-                    radius: 30,
+                    radius: 27,
                     startAngle: start,
                     endAngle: end,
                     clockwise: false)
         
-        scrollerLayer.fillColor = UIColor.orange.cgColor
+        scrollerLayer.fillColor = UIColor.cyan.cgColor
         scrollerLayer.path = path.cgPath
         
         self.layer.insertSublayer(scrollerLayer, at: 1)
@@ -102,7 +100,7 @@ public class RevolverMenuView: UIView {
         let path: UIBezierPath = UIBezierPath();
         path.move(to: startPoint)
         path.addArc(withCenter: startPoint,
-                    radius: 30,
+                    radius: 27,
                     startAngle: 0,
                     endAngle: CGFloat(-Double.pi * 2.0),
                     clockwise: false)
@@ -111,7 +109,7 @@ public class RevolverMenuView: UIView {
         circleLayer.path = path.cgPath
         
         startItem.center = startPoint
-        startItem.backgroundColor = UIColor.white
+        startItem.backgroundColor = UIColor.black
         
         for (index, button) in buttons.enumerated() {
             self.addSubview(button)
@@ -206,7 +204,7 @@ public class RevolverMenuView: UIView {
                     return
                 }
             }
-            UIView.animate(withDuration: 0.3, animations: {
+            UIView.animate(withDuration: 0.25, animations: {
                 self.moveMenuButtonPosision()
                 self.hiddenButton()
                 self.removeGestureView()
@@ -218,7 +216,7 @@ public class RevolverMenuView: UIView {
                     return
                 }
             }
-            UIView.animate(withDuration: 0.3, animations: {
+            UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.4, initialSpringVelocity: 0.3, options: .curveEaseIn, animations: {
                 self.moveDefaultButtonPosision()
                 self.showButton()
                 self.createGestureView()
@@ -316,7 +314,6 @@ public class RevolverMenuView: UIView {
 
 extension RevolverMenuView: CAAnimationDelegate {
     @objc func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        //reloadItems()
     }
 }
 

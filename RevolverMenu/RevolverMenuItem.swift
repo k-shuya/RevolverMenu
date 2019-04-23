@@ -22,18 +22,22 @@ public class RevolverMenuItem: UIButton {
         super.init(coder: aDecoder)
     }
     
-    public init() {
+    public init(_ border: Bool = false) {
         super.init(frame: CGRect(x: 10, y: 10, width: 50, height: 50))
-        //self.layer.cornerRadius = self.frame.size.width * 0.1
+        
+        if border {
+            self.layer.borderColor = UIColor.lightGray.cgColor
+            self.layer.borderWidth = 2
+        }
+        
         self.layer.cornerRadius = self.frame.size.width * 0.5
-        self.backgroundColor = self.backColor
-        self.setTitle("", for: .normal)  
+        self.backgroundColor = UIColor.black
+        self.setTitle("", for: .normal)
         self.addTarget(self, action: #selector(buttonEvent(_:)), for: UIControl.Event.touchUpInside)
     }
     
     @objc func buttonEvent(_ sender: UIButton) {
         delegate?.tapped(on: self)
-        //selectedTargetMenu()
     }
     
     public func setItem(image: RMItemImage) {

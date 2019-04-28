@@ -32,13 +32,11 @@ public class RevolverMenuItem: UIButton {
         super.init(coder: aDecoder)
     }
     
-    public init(_ border: Bool = false) {
+    public init() {
         super.init(frame: CGRect(x: 10, y: 10, width: 50, height: 50))
         
-        if border {
-            self.layer.borderColor = borderColor
-            self.layer.borderWidth = borderWidth
-        }
+        self.layer.borderColor = borderColor
+        self.layer.borderWidth = borderWidth
         
         self.layer.cornerRadius = self.frame.size.width * 0.5
         self.setTitle("", for: .normal)
@@ -49,9 +47,9 @@ public class RevolverMenuItem: UIButton {
                             itemHighLightedImage: UIImage? = nil,
                             backgroundImage: UIImage? = nil,
                             backgroundHighLightedImage: UIImage? = nil,
-                            backgroundColor: UIColor?)
+                            backgroundColor: UIColor? = nil)
     {
-        self.init(false)
+        self.init()
         self.backgroundColor = backgroundColor
         self.setImage(itemImage, for: .normal)
         self.setImage(itemHighLightedImage, for: .highlighted)

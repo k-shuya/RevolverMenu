@@ -15,6 +15,11 @@ public enum direction {
     case downRight
 }
 
+enum rotate {
+    case right
+    case left
+}
+
 public protocol RevolverMenuViewDelegate: class {
     func didSelect(on menu: RevolverMenuView, index: Int)
     func willExpand()
@@ -41,7 +46,6 @@ public class RevolverMenuView: UIView {
         
         let center: CGPoint = CGPoint(x: UIScreen.main.bounds.width/2, y: UIScreen.main.bounds.height/2)
     }
-    
     
     private var menuButton: RevolverMenuItem = RevolverMenuItem()
     
@@ -104,17 +108,17 @@ public class RevolverMenuView: UIView {
             
         case .downRight:
             menuCenter = CornerPoints().downRight
-            // startPoint = CornerPoints().center
+            //menuCenter = CornerPoints().center
             
         }
         
         reloadItems()
-        initButtons(menuItem: menuButton)
+        initButtons()
     }
     
     private func drawSector() {
-        scrollerLayer.removeFromSuperlayer()
         circleLayer.removeFromSuperlayer()
+        scrollerLayer.removeFromSuperlayer()
         
         let rad = menuButton.bounds.width/2 + menuBorderWidth
         
@@ -131,27 +135,52 @@ public class RevolverMenuView: UIView {
         
         self.layer.insertSublayer(circleLayer, at: 0)
         
-        let angle = (2.0 * Double.pi / ceil(Double(items.count)/4.0))
-        let start: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage)) // 開始の角度
-        let end: CGFloat = CGFloat(-Double.pi / 2.0 - angle * Double(currentPage+1)) // 終了の角度
+        let angle: CGFloat = CGFloat(2.0 * Double.pi / ceil(Double(items.count)/4.0))
+        let start: CGFloat = CGFloat(-Double.pi / 2.0) - angle * CGFloat(currentPage) // 開始の角度
+        let end: CGFloat = start - angle // 終了の角度
+        let path: UIBezierPath = UIBezierPath()
+        let arcCenter: CGPoint = CGPoint(x: 25, y: 25)
         
-        let path: UIBezierPath = UIBezierPath();
-        path.move(to: menuCenter)
-        path.addArc(withCenter: menuCenter,
+        path.move(to: arcCenter)
+        path.addArc(withCenter: arcCenter,
                     radius: rad,
                     startAngle: start,
                     endAngle: end,
                     clockwise: false)
         
+        scrollerLayer.frame = CGRect(x: menuCenter.x-25, y: menuCenter.y-25, width: 50, height: 50)
         scrollerLayer.fillColor = menuScrollerCollor
         scrollerLayer.path = path.cgPath
-        
         self.layer.insertSublayer(scrollerLayer, at: 1)
     }
     
-    private func initButtons(menuItem: RevolverMenuItem){
+    private func rotateScroller(_ direction: rotate) {
+        let angle: CGFloat = CGFloat(2.0 * Double.pi / ceil(Double(items.count)/4.0))
+        var fromVal: CGFloat = angle * CGFloat(currentPage)
+        var toVal: CGFloat = angle * CGFloat(currentPage+1)
         
-        menuItem.center = menuCenter
+        if direction == .right {
+            fromVal = -angle * CGFloat(currentPage)
+            toVal = -angle * CGFloat(currentPage+1)
+        } else {
+            fromVal = -angle * CGFloat(currentPage)
+            toVal = -angle * CGFloat(currentPage-1)
+        }
+        
+        let animation: CABasicAnimation = CABasicAnimation(keyPath: "transform.rotation")
+        animation.isRemovedOnCompletion = false
+        animation.fillMode = CAMediaTimingFillMode.forwards
+        animation.fromValue = fromVal
+        animation.toValue = toVal
+        animation.duration = 0.2
+        
+        scrollerLayer.add(animation, forKey: "animation")
+    }
+    
+    private func initButtons(){
+        
+        menuButton.center = menuCenter
+        menuButton.borderWidth = 0
         
         for (index, button) in buttons.enumerated() {
             self.addSubview(button)
@@ -160,7 +189,7 @@ public class RevolverMenuView: UIView {
             button.delegate = self
         }
         self.drawSector()
-        self.addSubview(menuItem)
+        self.addSubview(menuButton)
         
     }
     
@@ -178,15 +207,16 @@ public class RevolverMenuView: UIView {
         if sender.direction == .right || sender.direction == .up {
             if currentPage != Int(ceil(Double(items.count)/4.0) - 1) {
                 reloadItems()
-                rightAnimation()
+                //rightAnimation()
+                rotateAnimation(.right)
             }
         } else if sender.direction == .left || sender.direction == .down {
             if currentPage != 0 {
                 reloadItems()
-                leftAnimation()
+                //leftAnimation()
+                rotateAnimation(.left)
             }
         }
-        drawSector()
     }
     
     func createGestureView() {
@@ -302,7 +332,21 @@ public class RevolverMenuView: UIView {
         buttons.forEach { $0.center = menuCenter }
     }
     
-    func rightAnimation() {
+    func rotateAnimation(_ direction: rotate){
+        var paging: () -> Void
+        var movement: Double = 0
+        var isClockwise: Bool = true
+        
+        if direction == .right {
+            paging = { self.currentPage += 1 }
+            movement = -2/3
+            isClockwise = false
+        } else {
+            paging = { self.currentPage -= 1 }
+            movement = 2/3
+            isClockwise = true
+        }
+        
         for (index, button) in buttons.enumerated() {
             button.layer.removeAnimation(forKey: "end")
             let animation: CAKeyframeAnimation = self.animation()
@@ -314,32 +358,13 @@ public class RevolverMenuView: UIView {
             path.addArc(center: menuCenter,
                         radius: expandMargin,
                         startAngle: CGFloat(-Double.pi * (angle)),
-                        endAngle: CGFloat(-Double.pi * (angle - 2/3)),
-                        clockwise: false)
+                        endAngle: CGFloat(-Double.pi * (angle + movement)),
+                        clockwise: isClockwise)
             animation.path = path
             button.layer.add(animation, forKey: "start")
         }
-        currentPage += 1
-    }
-    
-    func leftAnimation() {
-        for (index, button) in buttons.enumerated() {
-            button.layer.removeAnimation(forKey: "end")
-            let animation: CAKeyframeAnimation = self.animation()
-            let path: CGMutablePath = CGMutablePath()
-            let stPoint: CGPoint = button.center
-            let angle: Double = Double(index-1) / 6.0
-            
-            path.move(to: stPoint)
-            path.addArc(center: menuCenter,
-                        radius: expandMargin,
-                        startAngle: CGFloat(-Double.pi * (angle)),
-                        endAngle: CGFloat(-Double.pi * (angle + 2/3)),
-                        clockwise: true)
-            animation.path = path
-            button.layer.add(animation, forKey: "start")
-        }
-        currentPage -= 1
+        rotateScroller(direction)
+        paging()
     }
     
     func animation() -> CAKeyframeAnimation {

@@ -56,7 +56,7 @@ public class RevolverMenuView: UIView {
     }
     
     private var items: [RevolverMenuItem] = []
-    private var buttons: [RevolverMenuItem] = (0 ..< 12).map({ _ in RevolverMenuItem() })
+    private var buttons: [RevolverMenuItem] = []
     
     private var currentPage: Int = 0
     private var isSelectedButton = false
@@ -88,11 +88,14 @@ public class RevolverMenuView: UIView {
         hiddenButton()
     }
     
-    public convenience init(frame: CGRect, menuItem: RevolverMenuItem, items: [RevolverMenuItem], direction: direction) {
+    public convenience init(frame: CGRect, menuItem: RevolverMenuItem, items: [RevolverMenuItem], displayCount: Int, direction: direction) {
         self.init(frame: frame)
         
         self.items = items
         self.menuButton = menuItem
+        self.displayCount = displayCount
+        
+        self.buttons = (0 ..< displayCount * 3).map({ _ in RevolverMenuItem() })
         
         menuButton.delegate = self
         
@@ -107,13 +110,28 @@ public class RevolverMenuView: UIView {
             menuCenter = CornerPoints().downLeft
             
         case .downRight:
-            menuCenter = CornerPoints().downRight
-            //menuCenter = CornerPoints().center
+            //menuCenter = CornerPoints().downRight
+            menuCenter = CornerPoints().center
             
         }
         
         reloadItems()
         initButtons()
+    }
+    
+    private func initButtons(){
+        
+        menuButton.center = menuCenter
+        menuButton.borderWidth = 0
+        
+        for (index, button) in buttons.enumerated() {
+            self.addSubview(button)
+            button.center = menuCenter
+            button.tag = index
+            button.delegate = self
+        }
+        self.drawSector()
+        self.addSubview(menuButton)
     }
     
     private func drawSector() {
@@ -135,7 +153,7 @@ public class RevolverMenuView: UIView {
         
         self.layer.insertSublayer(circleLayer, at: 0)
         
-        let angle: CGFloat = CGFloat(2.0 * Double.pi / ceil(Double(items.count)/4.0))
+        let angle: CGFloat = CGFloat(2.0 * Double.pi / ceil(Double(items.count)/Double(displayCount)))
         let start: CGFloat = CGFloat(-Double.pi / 2.0) - angle * CGFloat(currentPage) // 開始の角度
         let end: CGFloat = start - angle // 終了の角度
         let path: UIBezierPath = UIBezierPath()
@@ -155,7 +173,7 @@ public class RevolverMenuView: UIView {
     }
     
     private func rotateScroller(_ direction: rotate) {
-        let angle: CGFloat = CGFloat(2.0 * Double.pi / ceil(Double(items.count)/4.0))
+        let angle: CGFloat = CGFloat(2.0 * Double.pi / ceil(Double(items.count)/Double(displayCount)))
         var fromVal: CGFloat = angle * CGFloat(currentPage)
         var toVal: CGFloat = angle * CGFloat(currentPage+1)
         
@@ -177,22 +195,6 @@ public class RevolverMenuView: UIView {
         scrollerLayer.add(animation, forKey: "animation")
     }
     
-    private func initButtons(){
-        
-        menuButton.center = menuCenter
-        menuButton.borderWidth = 0
-        
-        for (index, button) in buttons.enumerated() {
-            self.addSubview(button)
-            button.center = menuCenter
-            button.tag = index
-            button.delegate = self
-        }
-        self.drawSector()
-        self.addSubview(menuButton)
-        
-    }
-    
     func initGesture(view: UIView) {
         let swipeDirections: [UISwipeGestureRecognizer.Direction] = [.right,.left, .up, .down]
         
@@ -205,7 +207,7 @@ public class RevolverMenuView: UIView {
     
     @objc func didSwipe(sender: UISwipeGestureRecognizer) {
         if sender.direction == .right || sender.direction == .up {
-            if currentPage != Int(ceil(Double(items.count)/4.0) - 1) {
+            if currentPage != Int(ceil(Double(items.count)/Double(displayCount)) - 1) {
                 reloadItems()
                 //rightAnimation()
                 rotateAnimation(.right)
@@ -246,9 +248,9 @@ public class RevolverMenuView: UIView {
             $0.removeFromSuperview()
             
         }
-        for itemIndex in (currentPage * 4 - 4)...(currentPage * 4 + 7) {
+        for itemIndex in (displayCount * (currentPage - 1))...(displayCount * (currentPage + 2) - 1) {
             
-            let index = itemIndex-(currentPage * 4 - 4)
+            let index = itemIndex-(displayCount * (currentPage - 1))
             
             if itemIndex < 0 || itemIndex >= items.count {
                 buttons[index] = RevolverMenuItem()
@@ -271,7 +273,7 @@ public class RevolverMenuView: UIView {
         
         if isSelectedButton {
             buttons.forEach{
-                guard (4...7) ~= $0.tag else {
+                guard (displayCount...(2 * displayCount - 1)) ~= $0.tag else {
                     $0.alpha = 0
                     return
                 }
@@ -283,7 +285,7 @@ public class RevolverMenuView: UIView {
             })
         } else {
             buttons.forEach{
-                guard (4...7) ~= $0.tag else {
+                guard (displayCount...(2 * displayCount - 1)) ~= $0.tag else {
                     $0.center = calcExpandedPosition($0.tag)
                     return
                 }
@@ -317,7 +319,7 @@ public class RevolverMenuView: UIView {
     /// ボタンを広げる
     private func moveExpandedPosision() {
         buttons.forEach{
-            if (4...7) ~= $0.tag {
+            if (displayCount...(2 * displayCount - 1)) ~= $0.tag {
                 $0.center = calcExpandedPosition($0.tag)
             }
         }
@@ -389,8 +391,8 @@ extension RevolverMenuView: RevolverMenuItemDelegate {
             selectedTargetMenu()
         }
         
-        if (4...7) ~= item.tag && (currentPage * 4 + (item.tag - 4)) < items.count {
-            delegate?.didSelect(on: self, index: currentPage * 4 + (item.tag - 4))
+        if (displayCount...(2 * displayCount - 1)) ~= item.tag && (currentPage * displayCount + (item.tag - displayCount)) < items.count {
+            delegate?.didSelect(on: self, index: currentPage * displayCount + (item.tag - displayCount))
         }
     }
     

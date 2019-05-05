@@ -82,7 +82,7 @@ public class RevolverMenuView: UIView {
         [(0.0, 0.0), (1.0/4.0, 1.0/2.0), (-1.0/12.0, 1.0/3.0), (-1.0/4.0, 1.0/4.0), (-1.0/6.0, 1.0/6.0)],
         [(0.0, 0.0), (3.0/4.0, -1.0/2.0), (13.0/12.0, -1.0/3.0), (-3.0/4.0, -1.0/4.0), (-5.0/6.0, -1.0/6.0)],
         [(0.0, 0.0), (3.0/4.0, 1.0/2.0), (5.0/12.0, 1.0/3.0), (1.0/4.0, 1.0/4.0), (1.0/3.0, 1.0/6.0)],
-        [(0.0, 0.0), (1.0/4.0, -1.0/2.0), (7.0/12.0, -1.0/3.0), (3.0/4.0, -1.0/4.0), (1.0/3.0, -1.0/6.0)],
+        [(0.0, 0.0), (1.0/4.0, -1.0/2.0), (7.0/12.0, -1.0/3.0), (3.0/4.0, -1.0/4.0), (2.0/3.0, -1.0/6.0)],
     ]
     
     private var scrollerLayer = CAShapeLayer()
@@ -138,9 +138,11 @@ public class RevolverMenuView: UIView {
             menuCenter = CornerPoints().downLeft
             //menuCenter = CornerPoints().center
         case .upRight:
-            menuCenter = CornerPoints().upRight
+            //menuCenter = CornerPoints().upRight
+            menuCenter = CornerPoints().center
         case .upLeft:
-            menuCenter = CornerPoints().upLeft
+            //menuCenter = CornerPoints().upLeft
+            menuCenter = CornerPoints().center
         }
         
         if self.direction.rawValue%2 == 0 {

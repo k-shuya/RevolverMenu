@@ -224,8 +224,8 @@ public class RevolverMenuView: UIView {
     private func rotateScroller(_ rotateDirection: Rotate) {
         scrollerLayer.removeAllAnimations()
         let angle: CGFloat = 2.0 * CGFloat.pi / ceil(CGFloat(items.count)/CGFloat(displayCount))
-        let fromVal: CGFloat = -angle * CGFloat(currentPage)
-        let toVal: CGFloat = -angle * CGFloat(currentPage + rotateDirection.rawValue)
+        let fromVal: CGFloat = -angle * CGFloat(currentPage) * CGFloat(pagingNext.rawValue)
+        let toVal: CGFloat = fromVal + angle * CGFloat(rotateDirection.rawValue)
         
         let animation: CABasicAnimation = CABasicAnimation(keyPath: "transform.rotation")
         animation.isRemovedOnCompletion = false
@@ -435,7 +435,7 @@ public class RevolverMenuView: UIView {
             animation.path = path
             button.layer.add(animation, forKey: "rotate")
         }
-        rotateScroller(rotateDirection)
+        rotateScroller(Rotate(rawValue: rotateDirection.rawValue * -1)!)
         paging()
     }
     

@@ -132,17 +132,17 @@ public class RevolverMenuView: UIView {
         
         switch self.direction {
         case .downRight:
-            //menuCenter = CornerPoints().downRight
-            menuCenter = CornerPoints().center
+            menuCenter = CornerPoints().downRight
+            //menuCenter = CornerPoints().center
         case .downLeft:
             menuCenter = CornerPoints().downLeft
             //menuCenter = CornerPoints().center
         case .upRight:
-            //menuCenter = CornerPoints().upRight
-            menuCenter = CornerPoints().center
+            menuCenter = CornerPoints().upRight
+            //menuCenter = CornerPoints().center
         case .upLeft:
-            //menuCenter = CornerPoints().upLeft
-            menuCenter = CornerPoints().center
+            menuCenter = CornerPoints().upLeft
+            //menuCenter = CornerPoints().center
         }
         
         if self.direction.rawValue%2 == 0 {
@@ -198,17 +198,22 @@ public class RevolverMenuView: UIView {
         self.layer.insertSublayer(circleLayer, at: 0)
         
         let angle: CGFloat = 2.0 * CGFloat.pi / ceil(CGFloat(items.count)/CGFloat(displayCount))
-        let start: CGFloat = -CGFloat.pi / 2.0 * -cos(CGFloat.pi * CGFloat(direction.rawValue/2))
-        let end: CGFloat = start - angle * CGFloat(pagingNext.rawValue)
+        let start: CGFloat = -CGFloat.pi / 2.0 * cos(CGFloat.pi * CGFloat(direction.rawValue/2))
+        let end: CGFloat = start - angle * cos(CGFloat.pi * CGFloat(direction.rawValue%2 + direction.rawValue/2))
         let path: UIBezierPath = UIBezierPath()
         let arcCenter: CGPoint = CGPoint(x: 25, y: 25)
+        var isClockwise: Bool = true
+        
+        if direction.rawValue%2 == direction.rawValue/2 {
+            isClockwise = false
+        }
         
         path.move(to: arcCenter)
         path.addArc(withCenter: arcCenter,
                     radius: rad,
                     startAngle: start,
                     endAngle: end,
-                    clockwise: true)
+                    clockwise: isClockwise)
         
         scrollerLayer.frame = CGRect(x: menuCenter.x-25, y: menuCenter.y-25, width: 50, height: 50)
         scrollerLayer.fillColor = menuScrollerCollor
@@ -218,7 +223,6 @@ public class RevolverMenuView: UIView {
     
     private func rotateScroller(_ rotateDirection: Rotate) {
         scrollerLayer.removeAllAnimations()
-        print(currentPage)
         let angle: CGFloat = 2.0 * CGFloat.pi / ceil(CGFloat(items.count)/CGFloat(displayCount))
         let fromVal: CGFloat = -angle * CGFloat(currentPage)
         let toVal: CGFloat = -angle * CGFloat(currentPage + rotateDirection.rawValue)

@@ -151,11 +151,11 @@ public class RevolverMenuView: UIView {
             menuCenter = referencePoints.downRight
            // menuCenter = referencePoints.center
         case .downLeft:
-            //menuCenter = referencePoints.downLeft
-            menuCenter = referencePoints.center
+            menuCenter = referencePoints.downLeft
+            //menuCenter = referencePoints.center
         case .upRight:
-            //menuCenter = referencePoints.upRight
-            menuCenter = referencePoints.center
+            menuCenter = referencePoints.upRight
+            //menuCenter = referencePoints.center
         case .upLeft:
             menuCenter = referencePoints.upLeft
             //menuCenter = referencePoints.center
@@ -191,6 +191,35 @@ public class RevolverMenuView: UIView {
         }
         self.drawScroller()
         self.addSubview(menuButton)
+    }
+    
+    private func replaceButtons(_ direction: Direction){
+        self.subviews.forEach{ $0.removeFromSuperview() }
+        
+        self.startAngle = angles[self.direction.rawValue][self.displayCount].startAngle
+        self.interval = angles[self.direction.rawValue][self.displayCount].interval
+        
+        switch direction {
+        case .downRight:
+            menuCenter = referencePoints.downRight
+        case .downLeft:
+            menuCenter = referencePoints.downLeft
+        case .upRight:
+            menuCenter = referencePoints.upRight
+        case .upLeft:
+            menuCenter = referencePoints.upLeft
+        }
+        
+        if direction == .downRight || direction == .upRight {
+            pagingNext = .right
+            pagingBack = .left
+        } else {
+            pagingNext = .left
+            pagingBack = .right
+        }
+        
+        reloadItems()
+        initButtons()
     }
     
     // MARK: - Scroller
@@ -494,6 +523,7 @@ extension RevolverMenuView {
         let move: CGPoint = sender.translation(in: self)
         
         if sender.state == .began {
+            hiddenButton()
             if isSelectedButton {
                 selectedTargetMenu()
             }
@@ -507,15 +537,20 @@ extension RevolverMenuView {
             let upLeftRange: CGRect = CGRect(x: 0, y: 0, width: referencePoints.center.x, height: referencePoints.center.y)
             
             var targetPoint: CGPoint = referencePoints.downRight
+            var targetDirection: Direction = .downRight
             
             if downRightRange.contains(sender.view!.center) {
                 targetPoint = referencePoints.downRight
+                targetDirection = .downRight
             } else if downLeftRange.contains(sender.view!.center) {
                 targetPoint = referencePoints.downLeft
+                targetDirection = .downLeft
             } else if upRightRange.contains(sender.view!.center) {
                 targetPoint = referencePoints.upRight
+                targetDirection = .upRight
             } else if upLeftRange.contains(sender.view!.center) {
                 targetPoint = referencePoints.upLeft
+                targetDirection = .upLeft
             }
             
             UIView.animate(withDuration: 0.3, animations: {
@@ -523,6 +558,10 @@ extension RevolverMenuView {
                 sender.view!.center.y = targetPoint.y
                 self.scrollerView.center.x = targetPoint.x
                 self.scrollerView.center.y = targetPoint.y
+            }, completion: { finished in
+                self.menuCenter = targetPoint
+                self.direction = targetDirection
+                self.replaceButtons(targetDirection)
             })
         }
         

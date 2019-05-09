@@ -38,24 +38,24 @@ public class RevolverMenuView: UIView {
     
     public weak var delegate: RevolverMenuViewDelegate?
     
-    struct CornerPoints {
-        let upLeft: CGPoint = CGPoint(x: 35, y: 35)
-        let upRight: CGPoint = CGPoint(x: UIScreen.main.bounds.width - 35, y: 35)
-        let downLeft: CGPoint = CGPoint(x: 35, y: UIScreen.main.bounds.height - 35)
-        let downRight: CGPoint = CGPoint(x: UIScreen.main.bounds.width - 35, y: UIScreen.main.bounds.height - 35)
-        
-        let center: CGPoint = CGPoint(x: UIScreen.main.bounds.width/2, y: UIScreen.main.bounds.height/2)
+    struct ReferencePoints {
+        var downRight: CGPoint
+        var downLeft: CGPoint
+        var upRight: CGPoint
+        var upLeft: CGPoint
+        var center: CGPoint
     }
     
     private var menuButton: RevolverMenuItem = RevolverMenuItem()
     
-    private var menuCenter: CGPoint = CornerPoints().downRight {
+    private var menuCenter: CGPoint = CGPoint.zero {
         didSet {
             menuButton.center = menuCenter
         }
     }
     
     private var items: [RevolverMenuItem] = []
+    private var emptyItems: [RevolverMenuItem] = []
     private var buttons: [RevolverMenuItem] = []
     
     private var direction: Direction = .downRight
@@ -86,7 +86,10 @@ public class RevolverMenuView: UIView {
     ]
     
     private var scrollerLayer = CAShapeLayer()
-    private var circleLayer = CAShapeLayer()
+    
+    private var scrollerView = UIView()
+    
+    private var referencePoints: ReferencePoints!
     
     public var menuBorderColor: CGColor = UIColor.lightGray.cgColor
     public var menuScrollerCollor: CGColor = UIColor.darkGray.cgColor
@@ -106,6 +109,18 @@ public class RevolverMenuView: UIView {
     
     public override init(frame: CGRect) {
         super.init(frame: frame)
+        
+        let downRight: CGPoint = CGPoint(x: frame.width - 35, y: frame.height - 35)
+        let downLeft: CGPoint = CGPoint(x: 35, y: frame.height - 35)
+        let upRight: CGPoint = CGPoint(x: frame.width - 35, y: 35)
+        let upLeft: CGPoint = CGPoint(x: 35, y: 35)
+        let center: CGPoint = CGPoint(x: frame.width/2, y: frame.height/2)
+        
+        self.referencePoints = ReferencePoints(downRight: downRight,
+                                               downLeft: downLeft,
+                                               upRight: upRight,
+                                               upLeft: upLeft,
+                                               center: center)
         
         self.isUserInteractionEnabled = true
         
@@ -127,25 +142,26 @@ public class RevolverMenuView: UIView {
         self.interval = angles[self.direction.rawValue][self.displayCount].interval
         
         self.buttons = (0 ..< self.displayCount * 3).map({ _ in RevolverMenuItem() })
+        self.emptyItems = (0 ..< displayCount - (items.count%displayCount)).map({ _ in RevolverMenuItem(backgroundColor: UIColor.white) })
         
         menuButton.delegate = self
         
         switch self.direction {
         case .downRight:
-            menuCenter = CornerPoints().downRight
-            //menuCenter = CornerPoints().center
+            menuCenter = referencePoints.downRight
+           // menuCenter = referencePoints.center
         case .downLeft:
-            menuCenter = CornerPoints().downLeft
-            //menuCenter = CornerPoints().center
+            //menuCenter = referencePoints.downLeft
+            menuCenter = referencePoints.center
         case .upRight:
-            menuCenter = CornerPoints().upRight
-            //menuCenter = CornerPoints().center
+            //menuCenter = referencePoints.upRight
+            menuCenter = referencePoints.center
         case .upLeft:
-            menuCenter = CornerPoints().upLeft
-            //menuCenter = CornerPoints().center
+            menuCenter = referencePoints.upLeft
+            //menuCenter = referencePoints.center
         }
         
-        if self.direction.rawValue%2 == 0 {
+        if direction == .downRight || direction == .upRight {
             pagingNext = .right
             pagingBack = .left
         } else {
@@ -155,6 +171,7 @@ public class RevolverMenuView: UIView {
         
         reloadItems()
         initButtons()
+        initPanGesture(view: self)
     }
     
     private func initDisplayCount(_ displayCount: Int) {
@@ -162,8 +179,8 @@ public class RevolverMenuView: UIView {
     }
     
     private func initButtons(){
-        
         menuButton.center = menuCenter
+        menuButton.tag = 1000
         menuButton.borderWidth = 0
         
         for (index, button) in buttons.enumerated() {
@@ -179,14 +196,17 @@ public class RevolverMenuView: UIView {
     // MARK: - Scroller
     
     private func drawScroller() {
-        circleLayer.removeFromSuperlayer()
-        scrollerLayer.removeFromSuperlayer()
+        
+        scrollerView = UIView(frame: CGRect(x: menuCenter.x-25, y: menuCenter.y-25, width: 50, height: 50))
+        
+        let circleLayer = CAShapeLayer()
         
         let rad = menuButton.bounds.width/2 + menuBorderWidth
+        let arcCenter: CGPoint = CGPoint(x: 25, y: 25)
         
         let circlePath: UIBezierPath = UIBezierPath();
-        circlePath.move(to: menuCenter)
-        circlePath.addArc(withCenter: menuCenter,
+        circlePath.move(to: arcCenter)
+        circlePath.addArc(withCenter: arcCenter,
                           radius: rad,
                           startAngle: 0,
                           endAngle: CGFloat.pi * 2.0,
@@ -195,16 +215,16 @@ public class RevolverMenuView: UIView {
         circleLayer.fillColor = menuBorderColor
         circleLayer.path = circlePath.cgPath
         
-        self.layer.insertSublayer(circleLayer, at: 0)
+        scrollerView.layer.insertSublayer(circleLayer, at: 0)
         
         let angle: CGFloat = 2.0 * CGFloat.pi / ceil(CGFloat(items.count)/CGFloat(displayCount))
         let start: CGFloat = -CGFloat.pi / 2.0 * cos(CGFloat.pi * CGFloat(direction.rawValue/2))
         let end: CGFloat = start - angle * cos(CGFloat.pi * CGFloat(direction.rawValue%2 + direction.rawValue/2))
         let path: UIBezierPath = UIBezierPath()
-        let arcCenter: CGPoint = CGPoint(x: 25, y: 25)
+        
         var isClockwise: Bool = true
         
-        if direction.rawValue%2 == direction.rawValue/2 {
+        if direction == .downRight || direction == .upLeft {
             isClockwise = false
         }
         
@@ -215,10 +235,13 @@ public class RevolverMenuView: UIView {
                     endAngle: end,
                     clockwise: isClockwise)
         
-        scrollerLayer.frame = CGRect(x: menuCenter.x-25, y: menuCenter.y-25, width: 50, height: 50)
+        scrollerLayer.frame = CGRect(x: 0, y: 0, width: 50, height: 50)
         scrollerLayer.fillColor = menuScrollerCollor
         scrollerLayer.path = path.cgPath
-        self.layer.insertSublayer(scrollerLayer, at: 1)
+        
+        scrollerView.layer.insertSublayer(scrollerLayer, at: 1)
+        
+        self.insertSubview(scrollerView, at: 0)
     }
     
     private func rotateScroller(_ rotateDirection: Rotate) {
@@ -239,7 +262,7 @@ public class RevolverMenuView: UIView {
     
     // MARK: - GestureView
     
-    func initGesture(view: UIView) {
+    func initSwipeGesture(view: UIView) {
         let swipeDirections: [UISwipeGestureRecognizer.Direction] = [.right,.left, .up, .down]
         
         swipeDirections.forEach{
@@ -259,7 +282,7 @@ public class RevolverMenuView: UIView {
         clearView.isUserInteractionEnabled = true
         clearView.parent = self
         
-        initGesture(view: clearView)
+        initSwipeGesture(view: clearView)
         
         self.addSubview(clearView)
         //setUserInteraction?(false)
@@ -272,6 +295,7 @@ public class RevolverMenuView: UIView {
     @objc func didSwipe(sender: UISwipeGestureRecognizer) {
         
         var rotateDirection: Rotate = .right
+        let lastPage: Int = Int(ceil(Double(items.count)/Double(displayCount)) - 1)
         
         switch sender.direction {
         case .up:
@@ -279,13 +303,13 @@ public class RevolverMenuView: UIView {
         case .down:
             rotateDirection = pagingBack
         case .right:
-            if direction.rawValue/2 == direction.rawValue%2 {
+            if direction == .downRight || direction == .upLeft {
                 rotateDirection = pagingNext
             } else {
                 rotateDirection = pagingBack
             }
         case .left:
-            if direction.rawValue/2 != direction.rawValue%2 {
+            if direction == .downLeft || direction == .upRight {
                 rotateDirection = pagingNext
             } else {
                 rotateDirection = pagingBack
@@ -294,10 +318,10 @@ public class RevolverMenuView: UIView {
             break
         }
         
-        if (rotateDirection == pagingNext && currentPage == Int(ceil(Double(items.count)/Double(displayCount)) - 1)) || (rotateDirection == pagingBack && currentPage == 0) {
+        if (rotateDirection == pagingNext && currentPage == lastPage) ||
+            (rotateDirection == pagingBack && currentPage == 0) {
             return
         } else {
-            reloadItems()
             self.rotateAnimation(rotateDirection)
         }
     }
@@ -308,22 +332,26 @@ public class RevolverMenuView: UIView {
         buttons.forEach {
             positions.append($0.center)
             $0.removeFromSuperview()
-            
         }
+        items.forEach{ $0.layer.removeAllAnimations() }
+        emptyItems.forEach{ $0.layer.removeAllAnimations() }
         for itemIndex in (displayCount * (currentPage - 1))...(displayCount * (currentPage + 2) - 1) {
-            
             let index = itemIndex-(displayCount * (currentPage - 1))
-            
-            if itemIndex < 0 || itemIndex >= items.count {
+            if itemIndex < 0 || itemIndex >= items.count + items.count%displayCount {
                 buttons[index] = RevolverMenuItem(backgroundColor: UIColor.white)
-            } else {
+            } else if itemIndex < items.count {
                 buttons[index] = items[itemIndex]
+            } else {
+                buttons[index] = emptyItems[itemIndex-items.count]
             }
             buttons[index].center = positions[index]
             buttons[index].tag = index
             buttons[index].delegate = self
         }
-        buttons.forEach { self.insertSubview($0, belowSubview: menuButton) }
+        buttons.forEach {
+            //$0.layer.removeAllAnimations()
+            self.insertSubview($0, belowSubview: menuButton)
+        }
     }
     
     // MARK: - メニューを押下
@@ -349,6 +377,7 @@ public class RevolverMenuView: UIView {
             buttons.forEach{
                 guard (displayCount...(2 * displayCount - 1)) ~= $0.tag else {
                     $0.center = calcExpandedPoint($0.tag)
+                    $0.alpha = 0
                     return
                 }
             }
@@ -362,17 +391,20 @@ public class RevolverMenuView: UIView {
         //setUserInteraction?(!isSelectedButton)
     }
     
-    
     // MARK: - ボタンの開閉
-    
-    /// AutoLayoutを有効にする
+    // AutoLayoutを有効にする
     private func enableAutoLayout() {
         buttons.forEach { $0.translatesAutoresizingMaskIntoConstraints = true }
         menuButton.translatesAutoresizingMaskIntoConstraints = true
     }
     
     private func showButton() {
-        buttons.forEach { $0.alpha = 1 }
+        hiddenButton()
+        buttons.forEach {
+            if (displayCount...(2 * displayCount - 1)) ~= $0.tag {
+                $0.alpha = 1
+            }
+        }
     }
     
     private func hiddenButton() {
@@ -399,13 +431,11 @@ public class RevolverMenuView: UIView {
     }
     
     func rotateAnimation(_ rotateDirection: Rotate){
-        
         var paging: () -> Void
         let movement: CGFloat = interval * CGFloat(displayCount) * CGFloat(rotateDirection.rawValue * -pagingNext.rawValue) 
         var isClockwise: Bool = true
         
         if rotateDirection == .right {
-            //movement = interval * CGFloat(displayCount) * CGFloat(rotateDirection.rawValue)
             paging = { self.currentPage += self.pagingNext.rawValue }
             isClockwise = false
         } else {
@@ -418,6 +448,9 @@ public class RevolverMenuView: UIView {
         } else {
             self.bringSubviewToFront(buttons.first!)
         }
+        
+        // showButtonsによって他のボタンが消されている場合必要
+        buttons.forEach{ $0.alpha = 1 }
         
         for (index, button) in buttons.enumerated() {
             button.layer.removeAnimation(forKey: "rotate")
@@ -450,14 +483,68 @@ public class RevolverMenuView: UIView {
     
 }
 
+extension RevolverMenuView {
+    func initPanGesture(view: UIView) {
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(drag(sender:)))
+        menuButton.addGestureRecognizer(pan)
+    }
+    
+    @objc func drag(sender: UIPanGestureRecognizer) {
+        //移動量を取得する。
+        let move: CGPoint = sender.translation(in: self)
+        
+        if sender.state == .began {
+            if isSelectedButton {
+                selectedTargetMenu()
+            }
+        }
+        
+        if sender.state == .ended {
+            
+            let downRightRange: CGRect = CGRect(x: referencePoints.center.x, y: referencePoints.center.y, width: referencePoints.center.x, height: referencePoints.center.y)
+            let downLeftRange: CGRect = CGRect(x: 0, y: referencePoints.center.y, width: referencePoints.center.x, height: referencePoints.center.y)
+            let upRightRange: CGRect = CGRect(x: referencePoints.center.x, y: 0, width: referencePoints.center.x, height: referencePoints.center.y)
+            let upLeftRange: CGRect = CGRect(x: 0, y: 0, width: referencePoints.center.x, height: referencePoints.center.y)
+            
+            var targetPoint: CGPoint = referencePoints.downRight
+            
+            if downRightRange.contains(sender.view!.center) {
+                targetPoint = referencePoints.downRight
+            } else if downLeftRange.contains(sender.view!.center) {
+                targetPoint = referencePoints.downLeft
+            } else if upRightRange.contains(sender.view!.center) {
+                targetPoint = referencePoints.upRight
+            } else if upLeftRange.contains(sender.view!.center) {
+                targetPoint = referencePoints.upLeft
+            }
+            
+            UIView.animate(withDuration: 0.3, animations: {
+                sender.view!.center.x = targetPoint.x
+                sender.view!.center.y = targetPoint.y
+                self.scrollerView.center.x = targetPoint.x
+                self.scrollerView.center.y = targetPoint.y
+            })
+        }
+        
+        //ドラッグした部品の座標に移動量を加算する。
+        sender.view!.center.x += move.x
+        sender.view!.center.y += move.y
+        scrollerView.center.x += move.x
+        scrollerView.center.y += move.y
+        
+        //移動量を0にする。
+        sender.setTranslation(CGPoint.zero, in: self)
+    }
+}
+
 // MARK: - delegate
 
 extension RevolverMenuView: CAAnimationDelegate {
     @objc func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-        buttons.forEach{
-            if anim == $0.layer.animation(forKey: "rotate") {
-                //reloadItems({})
-            }
+        if anim == buttons.last!.layer.animation(forKey: "rotate") {
+            reloadItems()
+            //buttons.forEach{ $0.alpha = 1 }
+            showButton()
         }
     }
 }

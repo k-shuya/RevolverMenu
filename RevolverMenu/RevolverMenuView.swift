@@ -172,6 +172,9 @@ public class RevolverMenuView: UIView {
         reloadItems()
         initButtons()
         initPanGesture(view: self)
+        
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        NotificationCenter.default.addObserver(self, selector: #selector(onOrientationDidChange(notification:)), name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     private func initDisplayCount(_ displayCount: Int) {
@@ -196,6 +199,8 @@ public class RevolverMenuView: UIView {
     private func replaceButtons(_ direction: Direction){
         self.subviews.forEach{ $0.removeFromSuperview() }
         
+        self.isSelectedButton = false
+        
         self.startAngle = angles[self.direction.rawValue][self.displayCount].startAngle
         self.interval = angles[self.direction.rawValue][self.displayCount].interval
         
@@ -204,6 +209,7 @@ public class RevolverMenuView: UIView {
             menuCenter = referencePoints.downRight
         case .downLeft:
             menuCenter = referencePoints.downLeft
+            //menuCenter = referencePoints.center
         case .upRight:
             menuCenter = referencePoints.upRight
         case .upLeft:
@@ -220,6 +226,22 @@ public class RevolverMenuView: UIView {
         
         reloadItems()
         initButtons()
+    }
+    
+    @objc func onOrientationDidChange(notification: NSNotification) {
+        self.frame = UIScreen.main.bounds
+        let downRight: CGPoint = CGPoint(x: frame.width - 35, y: frame.height - 35)
+        let downLeft: CGPoint = CGPoint(x: 35, y: frame.height - 35)
+        let upRight: CGPoint = CGPoint(x: frame.width - 35, y: 35)
+        let upLeft: CGPoint = CGPoint(x: 35, y: 35)
+        let center: CGPoint = CGPoint(x: frame.width/2, y: frame.height/2)
+        
+        self.referencePoints = ReferencePoints(downRight: downRight,
+                                               downLeft: downLeft,
+                                               upRight: upRight,
+                                               upLeft: upLeft,
+                                               center: center)
+        replaceButtons(direction)
     }
     
     // MARK: - Scroller
@@ -351,6 +373,7 @@ public class RevolverMenuView: UIView {
             (rotateDirection == pagingBack && currentPage == 0) {
             return
         } else {
+            reloadItems()
             self.rotateAnimation(rotateDirection)
         }
     }
@@ -378,7 +401,6 @@ public class RevolverMenuView: UIView {
             buttons[index].delegate = self
         }
         buttons.forEach {
-            //$0.layer.removeAllAnimations()
             self.insertSubview($0, belowSubview: menuButton)
         }
     }
@@ -530,7 +552,6 @@ extension RevolverMenuView {
         }
         
         if sender.state == .ended {
-            
             let downRightRange: CGRect = CGRect(x: referencePoints.center.x, y: referencePoints.center.y, width: referencePoints.center.x, height: referencePoints.center.y)
             let downLeftRange: CGRect = CGRect(x: 0, y: referencePoints.center.y, width: referencePoints.center.x, height: referencePoints.center.y)
             let upRightRange: CGRect = CGRect(x: referencePoints.center.x, y: 0, width: referencePoints.center.x, height: referencePoints.center.y)
@@ -583,7 +604,7 @@ extension RevolverMenuView: CAAnimationDelegate {
         if anim == buttons.last!.layer.animation(forKey: "rotate") {
             reloadItems()
             //buttons.forEach{ $0.alpha = 1 }
-            showButton()
+            //showButton()
         }
     }
 }
@@ -600,3 +621,4 @@ extension RevolverMenuView: RevolverMenuItemDelegate {
     }
     
 }
+

@@ -2,4 +2,4 @@
 
 リボルバーのように回転するメニューライブラリです。
 
-![](https://github.com/k-shuya/RevolverMenu/sample.gif)
+![](https://github.com/k-shuya/RevolverMenu.git/sample.gif)
